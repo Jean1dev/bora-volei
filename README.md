@@ -68,39 +68,27 @@ npm run test:db             # testa RLS, RPCs e a fila contra o banco do .env.lo
 
 > `npm run test:db` cria jogos de teste no banco, então rode só no banco local.
 
-## Supabase na nuvem
+## Produção e pipeline
 
-1. Crie um projeto em [supabase.com](https://supabase.com). Escolha a região **São Paulo (sa-east-1)**.
-2. Aplique a migration, de um destes dois jeitos:
-   - **SQL Editor:** abra o SQL Editor, cole o conteúdo de `supabase/migrations/20261005000000_init.sql` e rode; ou
-   - **CLI:**
-     ```bash
-     npx supabase login
-     npx supabase link --project-ref <ref-do-projeto>
-     npx supabase db push
-     ```
-3. Em **Project Settings → API**, copie a **Project URL** e a chave **anon / publishable**. Não use a `service_role`.
-4. Em **Realtime → Settings**, deixe **desligada** a opção que restringe o acesso a canais privados. A lista ao vivo usa um canal público. Se ela ficar ligada, o app continua funcionando, mas a lista só atualiza quando a aba volta ao foco ou quando a página é recarregada.
+- **Supabase:** projeto `bora-volei` (ref `puhqwwqvvyncltkhieby`, região `sa-east-1`, plano Free). Ele foi criado pela integração Supabase do Vercel Marketplace, então a cobrança e as chaves passam pela Vercel.
+- **Vercel:** projeto `bora-volei` ligado ao repositório pela integração Git. Cada push na `main` gera o deploy de produção em https://bora-volei.vercel.app e cada PR gera um preview. A integração cria `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` sozinha. `NEXT_PUBLIC_SITE_URL` foi criada à mão.
+- **GitHub Actions** (`.github/workflows/ci.yml`):
+  - Em todo PR e push na `main`: `npm run lint`, typecheck (`next typegen` + `tsc`), `npm test` e `npm run build`.
+  - Só no push na `main`, depois do CI passar: `supabase db push` aplica as migrations novas de `supabase/migrations/` no banco de produção.
+  - O job de migration usa o environment `production` do GitHub, com o secret `SUPABASE_ACCESS_TOKEN` (token pessoal do Supabase), o secret `SUPABASE_DB_PASSWORD` e a variável `SUPABASE_PROJECT_ID`.
 
-## Deploy na Vercel
+> A Vercel faz o deploy em paralelo com o Actions. Se uma mudança depender de uma migration nova, o deploy pode ficar pronto antes dela. Para evitar isso, ative **Settings → Deployment Checks** na Vercel e exija o check *Aplicar migrations (produção)*.
 
-1. Suba o repositório para o GitHub e importe-o na Vercel. O framework (Next.js) é detectado sozinho.
-2. Em **Settings → Environment Variables**, configure:
+Para criar uma migration: `npx supabase migration new <nome>`, escreva o SQL, teste com `npx supabase db reset` e abra o PR.
 
-   | Variável | Valor |
-   | --- | --- |
-   | `NEXT_PUBLIC_SUPABASE_URL` | Project URL do Supabase |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | chave anon / publishable |
-   | `NEXT_PUBLIC_SITE_URL` | URL pública do app, ex.: `https://boravolei.vercel.app` (usada nas meta tags e na imagem de prévia) |
+Em **Realtime → Settings** do Supabase, deixe **desligada** a opção que restringe o acesso a canais privados. A lista ao vivo usa um canal público. Se a opção ficar ligada, o app continua funcionando, mas a lista só atualiza quando a aba volta ao foco ou quando a página é recarregada.
 
-3. Faça o deploy.
-4. Teste a prévia colando o link de um jogo no WhatsApp ou no [opengraph.xyz](https://www.opengraph.xyz).
-
-> O WhatsApp guarda a prévia em cache por um tempo. Se o número de vagas mudar, a prévia de um link já enviado pode demorar a atualizar.
+Teste a prévia do link colando o endereço de um jogo no WhatsApp ou no [opengraph.xyz](https://www.opengraph.xyz). O WhatsApp guarda a prévia em cache por um tempo.
 
 ## Estrutura
 
 ```
+.github/workflows/ci.yml       CI + migrations na main
 supabase/migrations/           schema, views, RLS, RPCs e trigger do realtime
 scripts/testar-banco.mjs       testes de segurança/fila via chave anônima
 assets/                        fonte Archivo usada na imagem Open Graph
