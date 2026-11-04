@@ -60,6 +60,21 @@ export function JogoView(props: { jogo: Jogo; inscricoes: Inscricao[]; jaAcontec
       const r = await inscrever(jogo.slug, n);
       const nova = { inscricaoId: r.inscricao_id, cancelToken: r.cancel_token, nome: n };
       salvarInscricao(jogo.slug, nova);
+      if (r.confirmado && r.posicao === jogo.vagas) {
+        void fetch("/api/jogo-lotado", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: jogo.slug,
+            titulo: jogo.titulo,
+            organizador: jogo.organizador,
+            local: jogo.local,
+            data_hora: jogo.data_hora,
+            vagas: jogo.vagas,
+            ultimoInscrito: n,
+          }),
+        });
+      }
       await recarregar();
       setMinha(nova);
       setNome("");
