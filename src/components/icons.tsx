@@ -55,3 +55,13 @@ export const IconPencil = ({ size = 20 }: P) =>
     2,
     <path d="M21.17 6.81a1 1 0 0 0-3.98-3.98L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z" />,
   );
+export const IconCard = ({ size = 20 }: P) =>
+  svg(
+    size,
+    2.5,
+    <>
+      <rect x="2" y="5" width="20" height="14" rx="0" />
+      <path d="M2 10h20" />
+    </>,
+    true,
+  );

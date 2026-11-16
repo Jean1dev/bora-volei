@@ -3,6 +3,7 @@ import { formatDiaHora } from "./format";
 
 export const linkJogo = (slug: string) => `${location.origin}/j/${slug}`;
 export const linkAdmin = (slug: string, token: string) => `${location.origin}/j/${slug}/admin?t=${token}`;
+export const linkPagar = (slug: string) => `${location.origin}/j/${slug}/pagar`;
 
 export const whatsapp = (texto: string) => `https://wa.me/?text=${encodeURIComponent(texto)}`;
 
@@ -12,6 +13,15 @@ export function mensagemJogo(jogo: Pick<Jogo, "slug" | "titulo" | "data_hora" | 
 
 export function mensagemTimes(jogo: Pick<Jogo, "titulo" | "data_hora">, timeA: string[], timeB: string[]) {
   return `🏐 ${jogo.titulo} — ${formatDiaHora(jogo.data_hora)}\n\n*Time A:* ${timeA.join(", ")}\n*Time B:* ${timeB.join(", ")}`;
+}
+
+export function mensagemPagamento(jogo: Pick<Jogo, "slug" | "titulo" | "data_hora">) {
+  return (
+    `🏐 Pagamento — ${jogo.titulo}\n` +
+    `${formatDiaHora(jogo.data_hora)}\n\n` +
+    `Paga no *crédito* ou com *carteira digital* (Apple Pay / Google Pay).\n` +
+    `${linkPagar(jogo.slug)}`
+  );
 }
 
 export async function copiar(texto: string) {
