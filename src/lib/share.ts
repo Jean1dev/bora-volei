@@ -20,7 +20,6 @@ export function mensagemPagamento(jogo: Pick<Jogo, "slug" | "titulo" | "data_hor
     `🏐 Pagamento — ${jogo.titulo}\n` +
     `${formatDiaHora(jogo.data_hora)}\n\n` +
     `Paga no *crédito* ou com *carteira digital* (Apple Pay / Google Pay).\n` +
-    `Escolhe 1h ou 2h e finaliza aqui 👇\n` +
     `${linkPagar(jogo.slug)}`
   );
 }
