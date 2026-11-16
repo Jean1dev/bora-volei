@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GameForm } from "@/components/GameForm";
 import { Header } from "@/components/Header";
-import { IconArrow, IconPencil, IconRepeat, IconShare, IconShuffle } from "@/components/icons";
+import { IconArrow, IconCard, IconPencil, IconRepeat, IconShare, IconShuffle } from "@/components/icons";
 import { ListaJogadores } from "@/components/ListaJogadores";
 import { Segments } from "@/components/Segments";
 import { Toast, useToast } from "@/components/Toast";
@@ -19,7 +19,7 @@ import {
   type Jogo,
 } from "@/lib/jogos";
 import { dividirLista, sortearTimes } from "@/lib/lista";
-import { mensagemTimes, whatsapp } from "@/lib/share";
+import { mensagemPagamento, mensagemTimes, whatsapp } from "@/lib/share";
 import { salvarAdmin } from "@/lib/storage";
 import { useJogoAoVivo } from "@/lib/useJogoAoVivo";
 
@@ -243,6 +243,15 @@ export function AdminView(props: { jogo: Jogo; inscricoes: Inscricao[]; token: s
             <IconRepeat />
             Repetir semana que vem
           </button>
+          <a
+            href={whatsapp(mensagemPagamento(jogo))}
+            target="_blank"
+            rel="noopener"
+            className="btn btn-secondary col-span-2 min-h-16 flex-col items-start justify-center gap-1 px-3.5 text-left text-[16px]"
+          >
+            <IconCard />
+            Gerar link de pagamento
+          </a>
         </div>
 
         <ListaJogadores confirmados={confirmados} espera={espera} vagas={jogo.vagas} onRemover={remover} />

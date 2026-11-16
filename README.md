@@ -15,7 +15,8 @@ Webapp mobile-first para organizar o vôlei com os amigos e achar jogos com vaga
 | `/` | Início: "Criar jogo", "Jogos com vagas" e os jogos que este celular criou ou em que se inscreveu |
 | `/novo` | Formulário de criar jogo. Depois de criar, mostra o link para compartilhar e o link de admin |
 | `/j/[slug]` | Página do jogo (visão do jogador). Renderizada no servidor e com prévia própria no WhatsApp |
-| `/j/[slug]/admin?t=TOKEN` | Painel do organizador: remover, editar, abrir vagas, repetir e sortear times |
+| `/j/[slug]/admin?t=TOKEN` | Painel do organizador: remover, editar, abrir vagas, repetir, sortear times e gerar link de pagamento |
+| `/j/[slug]/pagar` | Checkout público: escolhe 1h/2h e quantidade, abre o Stripe Payment Link |
 | `/vagas` | Jogos futuros com `publico = true` e vagas sobrando |
 | `/j/[slug]/opengraph-image` | Imagem dinâmica da prévia (1200×630) |
 
@@ -56,6 +57,9 @@ npx supabase db reset       # aplica a migration
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY do supabase start>
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+# Opcionais só para o checkout Stripe (API operacoes-financeiras):
+PIX_API_URL=https://sua-api-financeira.exemplo
+PIX_API_KEY=<chave X-API-KEY>
 ```
 
 Depois:
@@ -71,7 +75,7 @@ npm run test:db             # testa RLS, RPCs e a fila contra o banco do .env.lo
 ## Produção e pipeline
 
 - **Supabase:** projeto `bora-volei` (ref `puhqwwqvvyncltkhieby`, região `sa-east-1`, plano Free). Ele foi criado pela integração Supabase do Vercel Marketplace, então a cobrança e as chaves passam pela Vercel.
-- **Vercel:** projeto `bora-volei` ligado ao repositório pela integração Git. Cada push na `main` gera o deploy de produção em https://bora-volei.vercel.app e cada PR gera um preview. A integração cria `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` sozinha. `NEXT_PUBLIC_SITE_URL` foi criada à mão.
+- **Vercel:** projeto `bora-volei` ligado ao repositório pela integração Git. Cada push na `main` gera o deploy de produção em https://bora-volei.vercel.app e cada PR gera um preview. A integração cria `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` sozinha. `NEXT_PUBLIC_SITE_URL` foi criada à mão. Para o link de pagamento, configure também as variáveis server-side `PIX_API_URL` e `PIX_API_KEY` (API [operacoes-financeiras](https://github.com/Jean1dev/operacoes-financeiras)).
 - **GitHub Actions** (`.github/workflows/ci.yml`):
   - Em todo PR e push na `main`: `npm run lint`, typecheck (`next typegen` + `tsc`), `npm test` e `npm run build`.
   - Só no push na `main`, depois do CI passar: `supabase db push` aplica as migrations novas de `supabase/migrations/` no banco de produção.
@@ -94,5 +98,5 @@ scripts/testar-banco.mjs       testes de segurança/fila via chave anônima
 assets/                        fonte Archivo usada na imagem Open Graph
 src/app/                       rotas (páginas server + views client)
 src/components/                Header, ListaJogadores, GameForm, GameRow, Segments, Toast, ícones
-src/lib/                       acesso ao Supabase, formatação de datas, fila/sorteio, localStorage, compartilhamento
+src/lib/                       acesso ao Supabase, formatação de datas, fila/sorteio, localStorage, compartilhamento, payments
 ```
