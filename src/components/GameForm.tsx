@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { DadosJogo, Jogo } from "@/lib/jogos";
-import { deInputs, paraInputs } from "@/lib/format";
+import { deInputs, formatValor, paraInputs, valorPorPessoa } from "@/lib/format";
 import { Header } from "./Header";
 import { IconArrow, IconCheck } from "./icons";
 
@@ -29,11 +29,14 @@ export function GameForm({ jogo, minVagas = 2, voltar, avisar, onSalvar }: Props
   const [hora, setHora] = useState(inicio.hora);
   const [local, setLocal] = useState(jogo?.local ?? "");
   const [vagas, setVagas] = useState(jogo?.vagas ?? 12);
-  const [valor, setValor] = useState(jogo?.valor ? String(jogo.valor).replace(".", ",") : "");
+  const [valor, setValor] = useState(jogo ? (jogo.valor ? String(jogo.valor).replace(".", ",") : "") : "90");
   const [organizador, setOrganizador] = useState(jogo?.organizador ?? "");
   const [salvando, setSalvando] = useState(false);
 
   const minimo = Math.max(2, minVagas);
+  const aluguelNumero = Number(normalizarValor(valor));
+  const confirmados = Math.min(jogo?.inscritos ?? 0, vagas);
+  const porPessoa = valorPorPessoa(Number.isFinite(aluguelNumero) ? aluguelNumero : null, confirmados);
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -102,9 +105,16 @@ export function GameForm({ jogo, minVagas = 2, voltar, avisar, onSalvar }: Props
         </div>
         <div className="field">
           <label htmlFor="valor">
-            Valor por pessoa <span className="font-normal text-neutral-700">(opcional)</span>
+            Aluguel da quadra <span className="font-normal text-neutral-700">(opcional)</span>
           </label>
-          <input id="valor" className="input" placeholder="R$ 10" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} />
+          <input id="valor" className="input" placeholder="R$ 90" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} />
+          {porPessoa != null ? (
+            <p className="mt-1.5 text-[13px] text-neutral-700">
+              {formatValor(porPessoa)} por pessoa ({confirmados} confirmados)
+            </p>
+          ) : aluguelNumero > 0 ? (
+            <p className="mt-1.5 text-[13px] text-neutral-700">Dividido por quem confirmar</p>
+          ) : null}
         </div>
         <div className="field">
           <label htmlFor="organizador">

@@ -1,55 +1,57 @@
 import { paymentsConfig } from "./config";
 
-export type CriarPaymentLinkStripeInput = {
-  quantity: number;
-  priceId: string;
+export type CriarCheckoutStripeInput = {
+  amount: number;
+  description: string;
   externalReferenceId: string;
+  successUrl: string;
+  cancelUrl: string;
 };
 
-export type CriarPaymentLinkStripeOutput = {
+export type CriarCheckoutStripeOutput = {
   url?: string;
   id?: string;
 };
 
-export class StripePaymentLinkApiError extends Error {
+export class StripeCheckoutApiError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "StripePaymentLinkApiError";
+    this.name = "StripeCheckoutApiError";
   }
 }
 
-export async function criarPaymentLinkStripe(
-  input: CriarPaymentLinkStripeInput,
-): Promise<CriarPaymentLinkStripeOutput> {
+export async function criarCheckoutStripe(input: CriarCheckoutStripeInput): Promise<CriarCheckoutStripeOutput> {
   const cfg = paymentsConfig();
-  if (!cfg.baseUrl) throw new StripePaymentLinkApiError("PIX_API_URL não configurada");
-  if (!cfg.apiKey) throw new StripePaymentLinkApiError("PIX_API_KEY não configurada");
+  if (!cfg.baseUrl) throw new StripeCheckoutApiError("PIX_API_URL não configurada");
+  if (!cfg.apiKey) throw new StripeCheckoutApiError("PIX_API_KEY não configurada");
 
   let res: Response;
   try {
-    res = await fetch(`${cfg.baseUrl}/stripe/payment-link`, {
+    res = await fetch(`${cfg.baseUrl}/stripe/checkout`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "X-API-KEY": cfg.apiKey,
       },
       body: JSON.stringify({
-        quantity: input.quantity,
-        priceId: input.priceId,
+        amount: input.amount,
+        currency: "brl",
+        description: input.description,
         externalReferenceId: input.externalReferenceId,
+        successUrl: input.successUrl,
+        cancelUrl: input.cancelUrl,
       }),
       signal: AbortSignal.timeout(cfg.readTimeoutMs),
       cache: "no-store",
     });
   } catch (err) {
-    throw new StripePaymentLinkApiError(
-      `Falha ao criar link de pagamento: ${(err as Error).message}`,
-    );
+    throw new StripeCheckoutApiError(`Falha ao criar checkout: ${(err as Error).message}`);
   }
 
   if (!res.ok) {
-    throw new StripePaymentLinkApiError(`API de pagamento respondeu ${res.status}`);
+    const data = (await res.json().catch(() => ({}))) as { mensagem?: string };
+    throw new StripeCheckoutApiError(data.mensagem || `API de pagamento respondeu ${res.status}`);
   }
 
-  return (await res.json().catch(() => ({}))) as CriarPaymentLinkStripeOutput;
+  return (await res.json().catch(() => ({}))) as CriarCheckoutStripeOutput;
 }

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import type { Jogo } from "@/lib/jogos";
-import { dataCurta, diaSemanaCurto, formatValor, horaCurta } from "@/lib/format";
+import { dataCurta, diaSemanaCurto, formatValor, horaCurta, valorPorPessoa } from "@/lib/format";
 
 /** Linha de jogo usada em "Jogos com vaga" e em "Seus jogos". */
 export function GameRow({ jogo, href, tag }: { jogo: Jogo; href?: string; tag?: string }) {
   const lotado = jogo.vagas_restantes === 0;
+  const aluguel = Number(jogo.valor) || null;
+  const porPessoa = valorPorPessoa(aluguel, Math.min(jogo.inscritos, jogo.vagas));
   return (
     <Link
       href={href ?? `/j/${jogo.slug}`}
@@ -25,7 +27,7 @@ export function GameRow({ jogo, href, tag }: { jogo: Jogo; href?: string; tag?: 
           <span className="text-[16px] font-extrabold text-accent-700">
             {lotado ? "lotado" : `faltam ${jogo.vagas_restantes}`}
           </span>
-          <span className="text-[14px] font-semibold">{formatValor(jogo.valor)}</span>
+          <span className="text-[14px] font-semibold">{formatValor(porPessoa ?? aluguel)}</span>
         </div>
       </div>
     </Link>

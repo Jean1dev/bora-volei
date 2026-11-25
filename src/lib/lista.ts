@@ -15,9 +15,19 @@ export function embaralhar<T>(lista: T[], random = Math.random) {
   return a;
 }
 
-/** Embaralha e divide em dois times com no máximo 1 jogador de diferença. */
-export function sortearTimes<T>(jogadores: T[], random = Math.random): [T[], T[]] {
+/** Com 12 ou mais, três times. Abaixo disso, dois. A diferença entre eles é no máximo 1. */
+export function sortearTimes<T>(jogadores: T[], random = Math.random): T[][] {
   const sh = embaralhar(jogadores, random);
-  const metade = Math.ceil(sh.length / 2);
-  return [sh.slice(0, metade), sh.slice(metade)];
+  const n = sh.length >= 12 ? 3 : 2;
+  const base = Math.floor(sh.length / n);
+  let extra = sh.length % n;
+  const times: T[][] = [];
+  let i = 0;
+  for (let t = 0; t < n; t++) {
+    const tamanho = base + (extra > 0 ? 1 : 0);
+    if (extra > 0) extra -= 1;
+    times.push(sh.slice(i, i + tamanho));
+    i += tamanho;
+  }
+  return times;
 }

@@ -7,7 +7,7 @@ import { IconArrow, IconCheck } from "@/components/icons";
 import { ListaJogadores } from "@/components/ListaJogadores";
 import { Segments } from "@/components/Segments";
 import { Toast, useToast } from "@/components/Toast";
-import { dataCurta, diaSemanaLongo, formatValor, horaCurta, ordinal } from "@/lib/format";
+import { dataCurta, diaSemanaLongo, formatValor, horaCurta, ordinal, valorPorPessoa } from "@/lib/format";
 import { cancelarInscricao, inscrever, type Inscricao, type Jogo } from "@/lib/jogos";
 import { dividirLista } from "@/lib/lista";
 import { mensagemJogo, whatsapp } from "@/lib/share";
@@ -34,7 +34,9 @@ export function JogoView(props: { jogo: Jogo; inscricoes: Inscricao[]; jaAcontec
   const count = confirmados.length;
   const lotado = count >= jogo.vagas;
   const faltam = Math.max(0, jogo.vagas - count);
-  const valor = formatValor(jogo.valor);
+  const aluguel = Number(jogo.valor) || null;
+  const porPessoa = valorPorPessoa(aluguel, count);
+  const valor = formatValor(porPessoa ?? aluguel);
 
   const minhaPos = minha ? inscricoes.findIndex((i) => i.id === minha.inscricaoId) : -1;
   const estouDentro = minhaPos >= 0 && minhaPos < jogo.vagas;
@@ -141,8 +143,13 @@ export function JogoView(props: { jogo: Jogo; inscricoes: Inscricao[]; jaAcontec
             <div className="text-[15px] leading-[1.3] font-semibold break-words">{jogo.local}</div>
           </div>
           <div className="px-5 py-3">
-            <div className="text-[12px] text-neutral-700">Por pessoa</div>
+            <div className="text-[12px] text-neutral-700">{count === 0 ? "Aluguel" : "Por pessoa"}</div>
             <div className="text-[20px] font-extrabold">{valor}</div>
+            {porPessoa != null && (
+              <div className="text-[12px] text-neutral-700">
+                quadra {formatValor(aluguel)} · {count} confirmados
+              </div>
+            )}
           </div>
         </div>
 
@@ -179,7 +186,7 @@ export function JogoView(props: { jogo: Jogo; inscricoes: Inscricao[]; jaAcontec
               <div>
                 <div className="text-[21px] leading-[1.15] font-extrabold">Você está confirmado ✓</div>
                 <div className="text-[14px] text-neutral-700">
-                  {minha.nome} · nº {minhaPos + 1} da lista{jogo.valor ? ` · leva ${valor}` : ""}
+                  {minha.nome} · nº {minhaPos + 1} da lista{porPessoa != null ? ` · leva ${formatValor(porPessoa)}` : ""}
                 </div>
               </div>
             </div>

@@ -9,7 +9,7 @@ import { IconArrow, IconCard, IconPencil, IconRepeat, IconShare, IconShuffle } f
 import { ListaJogadores } from "@/components/ListaJogadores";
 import { Segments } from "@/components/Segments";
 import { Toast, useToast } from "@/components/Toast";
-import { capitalizar, dataCurta, diaSemanaCurto, formatValor, horaCurta } from "@/lib/format";
+import { capitalizar, dataCurta, diaSemanaCurto, formatValor, horaCurta, valorPorPessoa } from "@/lib/format";
 import {
   adminAtualizarJogo,
   adminRemoverInscricao,
@@ -35,7 +35,7 @@ export function AdminView(props: { jogo: Jogo; inscricoes: Inscricao[]; token: s
   const [tela, setTela] = useState<Tela>("painel");
   // Valor otimista do switch enquanto a RPC não volta.
   const [publicoOtimista, setPublicoOtimista] = useState<boolean | null>(null);
-  const [times, setTimes] = useState<[string[], string[]]>([[], []]);
+  const [times, setTimes] = useState<string[][]>([]);
   const [sorteioN, setSorteioN] = useState(0);
   const [ocupado, setOcupado] = useState(false);
 
@@ -52,6 +52,10 @@ export function AdminView(props: { jogo: Jogo; inscricoes: Inscricao[]; token: s
 
   const { confirmados, espera } = dividirLista(inscricoes, jogo.vagas);
   const count = confirmados.length;
+  const aluguel = Number(jogo.valor) || null;
+  const porPessoa = valorPorPessoa(aluguel, count);
+  const valorTexto =
+    porPessoa != null ? `${formatValor(porPessoa)} por pessoa · quadra ${formatValor(aluguel)}` : formatValor(aluguel);
   const lotado = count >= jogo.vagas;
   const publico = publicoOtimista ?? jogo.publico;
 
@@ -121,26 +125,30 @@ export function AdminView(props: { jogo: Jogo; inscricoes: Inscricao[]; token: s
   }
 
   if (tela === "sorteio") {
-    const [timeA, timeB] = times;
+    const tres = times.length >= 3;
+    const jogadores = times.reduce((n, t) => n + t.length, 0);
+    const cores = ["bg-accent", "bg-ink", "bg-neutral-800"];
     return (
       <>
         <Header voltar={() => setTela("painel")} />
         <main className="flex flex-1 flex-col">
           <div className="p-5">
             <div className="kicker mb-1.5">
-              Sorteio nº {sorteioN} · {timeA.length + timeB.length} jogadores
+              Sorteio nº {sorteioN} · {jogadores} jogadores
             </div>
             <h1 className="text-[36px] tracking-[-0.03em]">Times sorteados</h1>
           </div>
-          <div className="grid grid-cols-2 border-y-2 border-ink">
-            {[
-              { nome: "Time A", jogadores: timeA, cor: "bg-accent", borda: "border-r-2 border-ink" },
-              { nome: "Time B", jogadores: timeB, cor: "bg-ink", borda: "" },
-            ].map((t) => (
-              <div key={t.nome} className={t.borda}>
-                <div className={`${t.cor} px-4 py-3 text-[22px] font-extrabold text-paper`}>{t.nome}</div>
-                {t.jogadores.map((p, i) => (
-                  <div key={i} className="flex min-h-12 items-center border-b border-divider px-4 text-[17px] font-semibold break-words">
+          <div className={`grid border-y-2 border-ink ${tres ? "grid-cols-3" : "grid-cols-2"}`}>
+            {times.map((time, idx) => (
+              <div key={idx} className={idx < times.length - 1 ? "border-r-2 border-ink" : ""}>
+                <div className={`${cores[idx]} ${tres ? "px-2 py-2.5 text-[15px]" : "px-4 py-3 text-[22px]"} font-extrabold text-paper`}>
+                  Time {String.fromCharCode(65 + idx)}
+                </div>
+                {time.map((p, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center border-b border-divider font-semibold break-words ${tres ? "min-h-11 px-2 text-[13px]" : "min-h-12 px-4 text-[17px]"}`}
+                  >
                     {p}
                   </div>
                 ))}
@@ -155,7 +163,7 @@ export function AdminView(props: { jogo: Jogo; inscricoes: Inscricao[]; token: s
             Sortear de novo
           </button>
           <a
-            href={whatsapp(mensagemTimes(jogo, timeA, timeB))}
+            href={whatsapp(mensagemTimes(jogo, times))}
             target="_blank"
             rel="noopener"
             className="btn btn-primary min-h-[60px] justify-between px-4 text-[17px]"
@@ -180,7 +188,7 @@ export function AdminView(props: { jogo: Jogo; inscricoes: Inscricao[]; token: s
             <h1 className="text-[32px] tracking-[-0.03em] break-words">{jogo.titulo}</h1>
             <div className="mt-1 text-[15px] text-neutral-800">
               {capitalizar(diaSemanaCurto(jogo.data_hora))} {dataCurta(jogo.data_hora)} · {horaCurta(jogo.data_hora)} ·{" "}
-              {formatValor(jogo.valor)}
+              {valorTexto}
             </div>
             <div className="text-[15px] text-neutral-800">{jogo.local}</div>
           </div>
@@ -244,7 +252,7 @@ export function AdminView(props: { jogo: Jogo; inscricoes: Inscricao[]; token: s
             Repetir semana que vem
           </button>
           <a
-            href={whatsapp(mensagemPagamento(jogo))}
+            href={whatsapp(mensagemPagamento(jogo, porPessoa != null ? formatValor(porPessoa) : null))}
             target="_blank"
             rel="noopener"
             className="btn btn-secondary col-span-2 min-h-16 flex-col items-start justify-center gap-1 px-3.5 text-left text-[16px]"

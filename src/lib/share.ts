@@ -11,15 +11,18 @@ export function mensagemJogo(jogo: Pick<Jogo, "slug" | "titulo" | "data_hora" | 
   return `🏐 ${jogo.titulo} — ${formatDiaHora(jogo.data_hora)}\n${jogo.local}\n\nBora! Confirma aqui 👇\n${linkJogo(jogo.slug)}`;
 }
 
-export function mensagemTimes(jogo: Pick<Jogo, "titulo" | "data_hora">, timeA: string[], timeB: string[]) {
-  return `🏐 ${jogo.titulo} — ${formatDiaHora(jogo.data_hora)}\n\n*Time A:* ${timeA.join(", ")}\n*Time B:* ${timeB.join(", ")}`;
+export function mensagemTimes(jogo: Pick<Jogo, "titulo" | "data_hora">, times: string[][]) {
+  const corpo = times.map((time, i) => `*Time ${String.fromCharCode(65 + i)}:* ${time.join(", ")}`).join("\n");
+  return `🏐 ${jogo.titulo} — ${formatDiaHora(jogo.data_hora)}\n\n${corpo}`;
 }
 
-export function mensagemPagamento(jogo: Pick<Jogo, "slug" | "titulo" | "data_hora">) {
+export function mensagemPagamento(jogo: Pick<Jogo, "slug" | "titulo" | "data_hora">, porPessoa: string | null) {
+  const valor = porPessoa ? `Cada pessoa paga *${porPessoa}*.` : "O valor por pessoa sai no link, quando o rateio fechar.";
   return (
     `🏐 Pagamento — ${jogo.titulo}\n` +
     `${formatDiaHora(jogo.data_hora)}\n\n` +
-    `Paga no *crédito* ou com *carteira digital* (Apple Pay / Google Pay).\n` +
+    `${valor}\n` +
+    `PIX, crédito ou carteira digital:\n` +
     `${linkPagar(jogo.slug)}`
   );
 }

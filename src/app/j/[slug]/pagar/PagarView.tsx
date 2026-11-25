@@ -3,37 +3,35 @@
 import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Toast, useToast } from "@/components/Toast";
-import { capitalizar, dataCurta, diaSemanaCurto, formatDiaHora, horaCurta } from "@/lib/format";
-import type { DuracaoVolei } from "@/lib/payments/produtos";
+import { capitalizar, dataCurta, diaSemanaCurto, formatDiaHora, formatValor, horaCurta, valorCobranca, valorPorPessoa } from "@/lib/format";
+import { formatCpf, PIX_CPF } from "@/lib/payments/pix";
 import type { Jogo } from "@/lib/jogos";
 import { copiar } from "@/lib/share";
 
-type Passo = "duracao" | "quantidade" | "pronto";
+type Passo = "quantidade" | "pronto";
 
 const erro = (e: unknown) => (e instanceof Error ? e.message : "Não deu certo, tenta de novo");
 
-export function PagarView({ jogo }: { jogo: Jogo }) {
+export function PagarView({ jogo, pago = false }: { jogo: Jogo; pago?: boolean }) {
   const { mensagem, avisar } = useToast();
-  const [passo, setPasso] = useState<Passo>("duracao");
-  const [duracao, setDuracao] = useState<DuracaoVolei | null>(null);
+  const aluguel = Number(jogo.valor) || null;
+  const confirmados = Math.min(jogo.inscritos, jogo.vagas);
+  const porPessoa = valorPorPessoa(aluguel, confirmados);
+  const pixFormatado = formatCpf(PIX_CPF);
+  const [passo, setPasso] = useState<Passo>("quantidade");
   const [paraMais, setParaMais] = useState(false);
   const [quantity, setQuantity] = useState(2);
   const [ocupado, setOcupado] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
-
-  function escolherDuracao(d: DuracaoVolei) {
-    setDuracao(d);
-    setPasso("quantidade");
-  }
+  const total = valorCobranca(aluguel, confirmados, quantity);
 
   async function irPagar(qtd: number) {
-    if (!duracao) return;
     setOcupado(true);
     try {
       const res = await fetch("/api/pagamento/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ duracao, quantity: qtd }),
+        body: JSON.stringify({ slug: jogo.slug, quantity: qtd }),
       });
       const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
       if (!res.ok || !data.url) {
@@ -61,47 +59,31 @@ export function PagarView({ jogo }: { jogo: Jogo }) {
             {capitalizar(diaSemanaCurto(jogo.data_hora))} {dataCurta(jogo.data_hora)} · {horaCurta(jogo.data_hora)}
           </div>
           <div className="text-[15px] text-neutral-800">{jogo.local}</div>
+          {pago && <div className="mt-3 text-[15px] font-bold text-accent-700">Pagamento enviado.</div>}
         </div>
 
-        {passo === "duracao" && (
-          <div className="flex flex-1 flex-col px-5 pb-6">
-            <p className="mb-4 text-[16px] text-neutral-800">Quanto tempo você jogou?</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                className="btn btn-primary min-h-24 flex-col items-start justify-center gap-1 px-4 text-left text-[20px]"
-                onClick={() => escolherDuracao("1h")}
-              >
-                <span className="text-[28px] leading-none font-extrabold">1h</span>
-                <span className="text-[14px] font-semibold opacity-90">Vôlei 1 hora</span>
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary min-h-24 flex-col items-start justify-center gap-1 px-4 text-left text-[20px]"
-                onClick={() => escolherDuracao("2h")}
-              >
-                <span className="text-[28px] leading-none font-extrabold">2h</span>
-                <span className="text-[14px] font-semibold">Vôlei 2 horas</span>
-              </button>
+        <div className="border-y-2 border-ink px-5 py-4">
+          <div className="text-[12px] text-neutral-700">{porPessoa != null ? "Por pessoa" : "Aluguel"}</div>
+          <div className="text-[32px] leading-none font-extrabold tracking-[-0.03em]">{formatValor(porPessoa ?? aluguel)}</div>
+          {porPessoa != null && (
+            <div className="mt-1 text-[13px] text-neutral-700">
+              quadra {formatValor(aluguel)} · {confirmados} confirmados
             </div>
-          </div>
-        )}
+          )}
+          <div className="mt-4 text-[12px] text-neutral-700">PIX · CPF</div>
+          <div className="text-[22px] font-extrabold tracking-[0.04em]">{pixFormatado}</div>
+          <button
+            type="button"
+            className="btn btn-primary mt-3 min-h-12 w-full text-[16px]"
+            onClick={async () => avisar((await copiar(PIX_CPF)) ? "PIX copiado" : "Não deu pra copiar")}
+          >
+            Copiar PIX
+          </button>
+        </div>
 
-        {passo === "quantidade" && duracao && (
-          <div className="flex flex-1 flex-col px-5 pb-6">
-            <button
-              type="button"
-              className="mb-3 self-start text-[14px] font-bold text-accent-700"
-              onClick={() => {
-                setPasso("duracao");
-                setDuracao(null);
-                setParaMais(false);
-                setQuantity(2);
-              }}
-            >
-              ← Trocar duração ({duracao})
-            </button>
-            <p className="mb-4 text-[16px] text-neutral-800">O pagamento é só pra você ou pra mais gente?</p>
+        {passo === "quantidade" && porPessoa != null && (
+          <div className="flex flex-1 flex-col px-5 pt-5 pb-6">
+            <p className="mb-4 text-[16px] text-neutral-800">Cartão ou carteira digital. O pagamento é só pra você ou pra mais gente?</p>
             <div className="flex flex-col gap-2">
               <button
                 type="button"
@@ -113,7 +95,7 @@ export function PagarView({ jogo }: { jogo: Jogo }) {
                 }}
               >
                 <span>Só pra mim</span>
-                <span className="text-[14px] font-semibold opacity-90">1 pessoa</span>
+                <span className="text-[14px] font-semibold opacity-90">{formatValor(porPessoa)}</span>
               </button>
               <button
                 type="button"
@@ -126,7 +108,7 @@ export function PagarView({ jogo }: { jogo: Jogo }) {
               </button>
             </div>
 
-            {paraMais && (
+            {paraMais && total != null && (
               <div className="mt-4 border-2 border-ink p-4">
                 <div className="mb-3 text-[15px] font-bold">Quantas pessoas?</div>
                 <div className="mb-4 flex items-center justify-center gap-4">
@@ -154,7 +136,7 @@ export function PagarView({ jogo }: { jogo: Jogo }) {
                   className="btn btn-primary min-h-14 w-full text-[18px]"
                   onClick={() => void irPagar(quantity)}
                 >
-                  {ocupado ? "Gerando pagamento…" : `Pagar ${quantity} × ${duracao}`}
+                  {ocupado ? "Gerando pagamento…" : `Pagar ${formatValor(total)}`}
                 </button>
               </div>
             )}
@@ -165,8 +147,14 @@ export function PagarView({ jogo }: { jogo: Jogo }) {
           </div>
         )}
 
+        {passo === "quantidade" && porPessoa == null && (
+          <div className="px-5 pt-5 pb-6 text-[16px] text-neutral-800">
+            Cartão e carteira digital abrem quando o rateio fechar. O PIX acima já vale.
+          </div>
+        )}
+
         {passo === "pronto" && checkoutUrl && (
-          <div className="flex flex-1 flex-col gap-3 px-5 pb-6">
+          <div className="flex flex-1 flex-col gap-3 px-5 pt-5 pb-6">
             <p className="text-[16px] text-neutral-800">
               Checkout aberto. Se a aba não abriu, usa o botão abaixo — cartão de crédito ou carteiras digitais.
             </p>
@@ -184,8 +172,7 @@ export function PagarView({ jogo }: { jogo: Jogo }) {
               type="button"
               className="btn btn-secondary min-h-12"
               onClick={() => {
-                setPasso("duracao");
-                setDuracao(null);
+                setPasso("quantidade");
                 setParaMais(false);
                 setQuantity(2);
                 setCheckoutUrl(null);
@@ -193,7 +180,9 @@ export function PagarView({ jogo }: { jogo: Jogo }) {
             >
               Fazer outro pagamento
             </button>
-            <div className="text-[13px] text-neutral-600">{formatDiaHora(jogo.data_hora)} · {jogo.titulo}</div>
+            <div className="text-[13px] text-neutral-600">
+              {formatDiaHora(jogo.data_hora)} · {jogo.titulo}
+            </div>
           </div>
         )}
       </main>
