@@ -61,6 +61,18 @@ export function formatValor(valor: number | null) {
   );
 }
 
+export function valorPorPessoa(aluguel: number | null, jogadores: number): number | null {
+  const total = Number(aluguel);
+  if (!total || jogadores <= 0) return null;
+  return Math.round((total / jogadores) * 100) / 100;
+}
+
+export function valorCobranca(aluguel: number | null, jogadores: number, quantity: number): number | null {
+  const unit = valorPorPessoa(aluguel, jogadores);
+  if (unit == null || !Number.isInteger(quantity) || quantity < 1) return null;
+  return Math.round(unit * quantity * 100) / 100;
+}
+
 /** "1º", "2º"… */
 export const ordinal = (n: number) => `${n}º`;
 

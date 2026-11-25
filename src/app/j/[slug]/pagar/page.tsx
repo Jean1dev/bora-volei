@@ -12,12 +12,13 @@ export async function generateMetadata({ params }: PageProps<"/j/[slug]/pagar">)
   const { jogo } = dados;
   return {
     title: `Pagar · ${jogo.titulo}`,
-    description: `Pagamento do jogo ${jogo.titulo} — ${formatDiaHora(jogo.data_hora)}. Crédito ou carteiras digitais.`,
+    description: `Pagamento do jogo ${jogo.titulo} — ${formatDiaHora(jogo.data_hora)}. PIX, crédito ou carteira digital.`,
   };
 }
 
-export default async function Page({ params }: PageProps<"/j/[slug]/pagar">) {
+export default async function Page({ params, searchParams }: PageProps<"/j/[slug]/pagar">) {
   const dados = await carregarJogo((await params).slug);
   if (!dados) notFound();
-  return <PagarView jogo={dados.jogo} />;
+  const { pago } = await searchParams;
+  return <PagarView jogo={dados.jogo} pago={pago === "1"} />;
 }
